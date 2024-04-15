@@ -1,23 +1,37 @@
 package com.clientes.clientes.model;
 
-public class Usuarios {
-    private int id;
-    private String rut;
-    private String rol;
-    private String nombre;
-    private String apellido;
-    private String direccion ;
 
-    public Usuarios(int id,String rut, String nombre, String apellido, String rol, String direccion) {
-        this.id = id;
-        this.rut = rut;
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.rol = rol;
-        this.direccion = direccion;
-    }
-    
-    public int getId() {
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="usuarios")
+public class Usuarios {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id; 
+    @Column(name = "rut")
+    private String rut;
+    @Column(name = "rol")
+    private String rol;
+    @Column(name = "nombre")
+    private String nombre;
+    @Column(name = "apellido")
+    private String apellido;
+    @Column(name = "direccion")
+    private String direccion ;    
+    @Column(name = "usuarioLogin")
+    private String usuarioLogin;
+    @Column(name = "password")
+    private String password;
+        
+    public Long getId() {
         return id;
     }
     public String getRut() {
@@ -38,4 +52,15 @@ public class Usuarios {
     public String getRol() {
         return rol;
     }
+    public String getUsuarioLogin() {
+        return usuarioLogin;
+    }
+    public String getPassword() {
+        return password;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+
 }

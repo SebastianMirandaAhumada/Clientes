@@ -3,32 +3,44 @@ package com.clientes.clientes.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.clientes.clientes.model.Usuarios;
+import com.clientes.clientes.service.UsuarioService;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 public class UsuarioController {
     private List<Usuarios> usuario = new ArrayList<>();
+    private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
 
-    public UsuarioController(){
-        usuario.add(new Usuarios(1, "1536823-3", "Sebastian", "Miranda", "Admin", "Av.Siempre Viva 123"));
-        usuario.add(new Usuarios(2, "4816660-1", "Antonio", "Banderas", "clientedePago", "Av.Siempre Viva 555"));
-        usuario.add(new Usuarios(3, "1319648-6", "Gabriela", "Medina", "clientedePago", "Av.Siempre Viva 777"));
-        usuario.add(new Usuarios(4, "2019571-1", "Homero", "Simpson", "clienteNormal", "Av.Siempre Viva 888"));
-        usuario.add(new Usuarios(5, "1551077-3", "Alexis", "Sanchez", "clienteNormal", "Av.Siempre Viva 971"));
-        usuario.add(new Usuarios(6, "2059862-k", "Bart", "Simpson", "clienteNormal", "Av.Siempre Viva 092"));
-    }
+    @Autowired
+    private UsuarioService usuarioService;
 
     @GetMapping("/usuarios")
-    public List<Usuarios> getUsuarios() {
-        return usuario;
+    public ResponseEntity<?> getUsuarios() {
+        var usuarios = usuarioService.getAllUsuarios();
+        if (usuarios.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No hay registro de usuarios");
+
+        }
+        return ResponseEntity.ok(usuarios);
     }
-    @GetMapping("/usuarios/Id/{id}")
+
+    @GetMapping("/usuarios/{id}")
     public ResponseEntity<?> getUsuarioById(@PathVariable int id) {
         for (Usuarios usuario : usuario) {
             if (usuario.getId() == id) {
@@ -36,28 +48,48 @@ public class UsuarioController {
             }
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-        .body("No hay atenciones registradas con ese id: " + id);
+                .body("No hay usuarios registrados con ese id: " + id);
     }
 
-    @GetMapping("/usuarios/Rut/{rut}")
-    public ResponseEntity<?> getUsuarioByRut(@PathVariable String rut) {
-        for (Usuarios usuario : usuario) {
-            if (usuario.getRut().equals(rut)) {
-                return ResponseEntity.ok(usuario);
-            }
+    @PostMapping
+    public ResponseEntity<String> createUsuarios(@RequestBody Usuarios usuarios) {
+        Usuarios createdUsuario = usuarioService.createUsuarios(usuarios);
+        if (createdUsuario != null) {
+            String mensaje = "Usuario creado con éxito";
+            return ResponseEntity.status(HttpStatus.CREATED).body(mensaje);
+        } else {
+            String mensaje = "No se pudo crear el usuario";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mensaje);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-        .body("No hay atenciones registradas con ese RUT: " + rut);
     }
 
-    @GetMapping("/usuarios/Rol/{rol}")
-    public  ResponseEntity<?>  getUsuarioByRol(@PathVariable String rol) {
-        for (Usuarios usuario : usuario) {
-            if (usuario.getRol().equals(rol)) {
-                return ResponseEntity.ok(usuario);
-            }
+    @PutMapping("/actualizar/{id}")
+    public ResponseEntity<String> updateUsuarios(@PathVariable Long id, @RequestBody Usuarios usuarios) {
+        Usuarios updatedUsuario = usuarioService.updateUsuarios(id, usuarios);
+        if (updatedUsuario != null) {
+            String mensaje = "Usuario actualizado con éxito";
+            return ResponseEntity.ok(mensaje);
+        } else {
+            String mensaje = "No se encontró el usuario con ID " + id + " o no se pudo actualizar";
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-        .body("No hay atenciones registradas con ese rol: " + rol);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteUsuarios(@PathVariable Long id) {
+        usuarioService.deleteUsuarios(id);
+        String mensaje = "Usuario eliminado exitosamente";
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(mensaje);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Usuarios usuarios) {
+        Usuarios usuarioEncontrado = usuarioService.login(usuarios.getUsuarioLogin(), usuarios.getPassword());
+        if (usuarioEncontrado != null) {
+            return ResponseEntity.ok(usuarioEncontrado);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario o contraseña incorrectos");
+        }
+    }
+
 }
