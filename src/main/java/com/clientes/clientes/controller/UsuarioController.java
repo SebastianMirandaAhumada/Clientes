@@ -2,11 +2,15 @@ package com.clientes.clientes.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,8 +24,10 @@ import com.clientes.clientes.service.UsuarioService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @RestController
+@RequestMapping("/usuarios")
 public class UsuarioController {
     private List<Usuarios> usuario = new ArrayList<>();
     private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
@@ -29,19 +35,25 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
-    @GetMapping("/usuarios")
-    public ResponseEntity<?> getUsuarios() {
-        var usuarios = usuarioService.getAllUsuarios();
-        if (usuarios.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("No hay registro de usuarios");
+    @GetMapping
+    public CollectionModel<EntityModel<Usuarios>> getAllUsuarios() {
+        List<Usuarios> usuarios = usuarioService.getAllUsuarios();
+        List<EntityModel<Usuarios>> usuarioResource = usuarios.stream()
+                .map(usuario -> EntityModel.of(usuario,
+                        WebMvcLinkBuilder
+                                .linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getUsuarioById(usuario.getId()))
+                                .withSelfRel()))
+                .collect(Collectors.toList());
 
-        }
-        return ResponseEntity.ok(usuarios);
+        WebMvcLinkBuilder linkTo = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(getClass()).getAllUsuarios());
+        CollectionModel<EntityModel<Usuarios>> resource = CollectionModel.of(usuarioResource,
+                linkTo.withRel("usuarios"));
+        return resource;
+
     }
 
     @GetMapping("/usuarios/{id}")
-    public ResponseEntity<?> getUsuarioById(@PathVariable int id) {
+    public ResponseEntity<?> getUsuarioById(@PathVariable Long id) {
         for (Usuarios usuario : usuario) {
             if (usuario.getId() == id) {
                 return ResponseEntity.ok(usuario);
