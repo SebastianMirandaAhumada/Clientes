@@ -2,6 +2,7 @@ package com.clientes.clientes.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.LoggerFactory;
@@ -52,55 +53,56 @@ public class UsuarioController {
 
     }
 
-    @GetMapping("/usuarios/{id}")
-    public ResponseEntity<?> getUsuarioById(@PathVariable Long id) {
-        for (Usuarios usuario : usuario) {
-            if (usuario.getId() == id) {
-                return ResponseEntity.ok(usuario);
-            }
+    @GetMapping("/{id}")
+    public EntityModel<Usuarios> getUsuarioById(@PathVariable Long id) {
+        Optional<Usuarios> usuarioOptional = usuarioService.getUsuarioById(id);
+        if (usuarioOptional.isPresent()) {
+            return EntityModel.of(usuarioOptional.get(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getUsuarioById(id))
+                            .withSelfRel(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios())
+                            .withRel("Todos los estudiantes"));
+
+        } else {
+            throw new UsuarioNotFoundException("Usuario no puede ser encontrado con el id:" + id);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("No hay usuarios registrados con ese id: " + id);
     }
 
     @PostMapping
-    public ResponseEntity<String> createUsuarios(@RequestBody Usuarios usuarios) {
-        Usuarios createdUsuario = usuarioService.createUsuarios(usuarios);
-        if (createdUsuario != null) {
-            String mensaje = "Usuario creado con éxito";
-            return ResponseEntity.status(HttpStatus.CREATED).body(mensaje);
-        } else {
-            String mensaje = "No se pudo crear el usuario";
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mensaje);
-        }
+    public EntityModel<Usuarios> createUsuario(@RequestBody Usuarios usuarios) {
+        Usuarios crearUsuario = usuarioService.createUsuarios(usuarios);
+        return EntityModel.of(crearUsuario,
+                WebMvcLinkBuilder
+                        .linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getUsuarioById(crearUsuario.getId()))
+                        .withSelfRel(),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios())
+                        .withRel("Todos los creados usuarios"));
     }
 
-    @PutMapping("/actualizar/{id}")
-    public ResponseEntity<String> updateUsuarios(@PathVariable Long id, @RequestBody Usuarios usuarios) {
-        Usuarios updatedUsuario = usuarioService.updateUsuarios(id, usuarios);
-        if (updatedUsuario != null) {
-            String mensaje = "Usuario actualizado con éxito";
-            return ResponseEntity.ok(mensaje);
-        } else {
-            String mensaje = "No se encontró el usuario con ID " + id + " o no se pudo actualizar";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
-        }
+    @PutMapping("/{id}")
+    public EntityModel<Usuarios> updateUsuario(@PathVariable Long id, @RequestBody Usuarios usuarios) {
+        Usuarios updateUsuarios = usuarioService.updateUsuarios(id, usuarios);
+        return EntityModel.of(updateUsuarios,
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getUsuarioById(id)).withSelfRel(),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios())
+                        .withRel("Todos los Usuarios"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUsuarios(@PathVariable Long id) {
+    public void deleteUsuarios(@PathVariable Long id) {
         usuarioService.deleteUsuarios(id);
-        String mensaje = "Usuario eliminado exitosamente";
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(mensaje);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Usuarios usuarios) {
+    public  EntityModel<Usuarios> login( @RequestBody Usuarios usuarios) {
         Usuarios usuarioEncontrado = usuarioService.login(usuarios.getUsuarioLogin(), usuarios.getPassword());
         if (usuarioEncontrado != null) {
-            return ResponseEntity.ok(usuarioEncontrado);
+             EntityModel<Usuarios> usuarioModel = EntityModel.of(usuarioEncontrado,
+            WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios()).withRel("Usuario Logeado"));
+            // usuarioModel.add(linkTo(WebMvcLinkBuilder.methodOn(UsuarioController.class).login(usuarioEncontrado)).withSelfRel()); // Agrega un enlace de "self"
+            return usuarioModel;
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario o contraseña incorrectos");
+            throw new UsuarioNotFoundException("Usuario no puede logear");
         }
     }
 
