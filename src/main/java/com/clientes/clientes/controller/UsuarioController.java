@@ -48,7 +48,7 @@ public class UsuarioController {
 
         WebMvcLinkBuilder linkTo = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(getClass()).getAllUsuarios());
         CollectionModel<EntityModel<Usuarios>> resource = CollectionModel.of(usuarioResource,
-                linkTo.withRel("usuarios"));
+                linkTo.withRel("USUARIOS ENCONTRADOS"));
         return resource;
 
     }
